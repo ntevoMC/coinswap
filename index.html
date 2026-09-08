@@ -10,13 +10,16 @@
 <body>
 
 <div id="app">
-    <!-- ===== ВХОД / РЕГИСТРАЦИЯ ===== -->
+
+    <!-- ========================================= -->
+    <!-- СТРАНИЦА ВХОДА / РЕГИСТРАЦИИ -->
+    <!-- ========================================= -->
     <div id="authPage">
         <div class="auth-container">
             <div class="auth-box">
                 <div class="auth-logo">Coin<span>Swap</span></div>
-                
-                <!-- Вход -->
+
+                <!-- ФОРМА ВХОДА -->
                 <div id="loginForm">
                     <h2>Вход</h2>
                     <div class="form-group">
@@ -29,13 +32,13 @@
                     </div>
                     <button class="btn btn-primary btn-block" id="loginBtn">Войти</button>
                     <div class="auth-links">
-                        <a href="#" id="showRegister">Нет аккаунта? Зарегистрироваться</a>
-                        <a href="#" id="showReset">Забыли пароль?</a>
+                        <a href="#" id="showRegisterBtn">Нет аккаунта? Зарегистрироваться</a>
+                        <a href="#" id="showResetBtn">Забыли пароль?</a>
                     </div>
                     <div id="loginError" class="alert alert-error hidden"></div>
                 </div>
 
-                <!-- Регистрация -->
+                <!-- ФОРМА РЕГИСТРАЦИИ -->
                 <div id="registerForm" class="hidden">
                     <h2>Регистрация</h2>
                     <div class="form-group">
@@ -56,12 +59,12 @@
                     </div>
                     <button class="btn btn-primary btn-block" id="registerBtn">Создать аккаунт</button>
                     <div class="auth-links">
-                        <a href="#" id="showLogin">Уже есть аккаунт? Войти</a>
+                        <a href="#" id="showLoginBtn">Уже есть аккаунт? Войти</a>
                     </div>
                     <div id="regError" class="alert alert-error hidden"></div>
                 </div>
 
-                <!-- Восстановление пароля -->
+                <!-- ФОРМА ВОССТАНОВЛЕНИЯ -->
                 <div id="resetForm" class="hidden">
                     <h2>Восстановление пароля</h2>
                     <div class="form-group">
@@ -70,18 +73,21 @@
                     </div>
                     <button class="btn btn-primary btn-block" id="resetBtn">Отправить инструкцию</button>
                     <div class="auth-links">
-                        <a href="#" id="showLoginFromReset">Вернуться ко входу</a>
+                        <a href="#" id="showLoginFromResetBtn">Вернуться ко входу</a>
                     </div>
                     <div id="resetError" class="alert alert-error hidden"></div>
                     <div id="resetSuccess" class="alert alert-success hidden"></div>
                 </div>
+
             </div>
         </div>
     </div>
 
-    <!-- ===== ОСНОВНОЙ ИНТЕРФЕЙС ===== -->
+    <!-- ========================================= -->
+    <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+    <!-- ========================================= -->
     <div id="mainPage" class="hidden">
-        
+
         <!-- ШАПКА -->
         <header class="header">
             <div class="logo">Coin<span>Swap</span></div>
@@ -101,7 +107,7 @@
             </div>
         </header>
 
-        <!-- СТРАНИЦЫ -->
+        <!-- КОНТЕНТ -->
         <div class="content">
 
             <!-- ДАШБОРД -->
@@ -259,7 +265,6 @@
                         <div class="stat-item">Транзакций за сутки: <span id="adminDailyTx">0</span></div>
                     </div>
                 </div>
-
                 <div class="card">
                     <h3>Управление пользователями</h3>
                     <div class="table-wrap">
@@ -269,7 +274,6 @@
                         </table>
                     </div>
                 </div>
-
                 <div class="card">
                     <h3>Все транзакции</h3>
                     <div class="form-group">
