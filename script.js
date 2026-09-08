@@ -1,12 +1,30 @@
 // =============================================
-// CoinSwap — ОБМЕННИК КРИПТОВАЛЮТ
+// CoinSwap — ПОЛНЫЙ СКАМ-ОБМЕННИК
 // =============================================
 
-let state = {
+const STATE = {
     currentUser: null,
     users: [],
-    allTransactions: []
+    transactions: [],
+    prices: { BTC: 45000, ETH: 2800, USDT: 1, XRP: 0.6, SOL: 140 },
+    chartData: [],
+    chartInterval: null,
+    priceInterval: null,
 };
+
+// ===== ИНИЦИАЛИЗАЦИЯ =====
+function init() {
+    loadData();
+    if (STATE.users.length === 0) {
+        createDefaultUsers();
+        createDefaultTransactions();
+    }
+    renderAuth();
+    bindAuthEvents();
+    bindMainEvents();
+    startPriceUpdates();
+    startChartUpdates();
+}
 
 // ===== ЗАГРУЗКА / СОХРАНЕНИЕ =====
 function loadData() {
@@ -14,427 +32,240 @@ function loadData() {
     if (saved) {
         try {
             const data = JSON.parse(saved);
-            state.users = data.users || [];
-            state.allTransactions = data.allTransactions || [];
-            state.currentUser = data.currentUser || null;
+            STATE.users = data.users || [];
+            STATE.transactions = data.transactions || [];
+            STATE.currentUser = data.currentUser || null;
             return;
         } catch (e) {}
     }
-    // Первый запуск
-    state.users = [
-        { username: 'admin', password: 'admin123', btc: 2.5, usd: 5000, isAdmin: true, transactions: [] },
-        { username: 'user1', password: 'user123', btc: 0.5, usd: 1000, isAdmin: false, transactions: [] }
-    ];
-    state.allTransactions = [];
-    state.currentUser = null;
-    saveData();
 }
 
 function saveData() {
     localStorage.setItem('coinswapData', JSON.stringify({
-        users: state.users,
-        allTransactions: state.allTransactions,
-        currentUser: state.currentUser
+        users: STATE.users,
+        transactions: STATE.transactions,
+        currentUser: STATE.currentUser,
     }));
 }
 
-function getUser(username) {
-    return state.users.find(u => u.username === username);
-}
-
-function formatBtc(v) { return '₿ ' + Number(v).toFixed(4); }
-function formatUsd(v) { return '$ ' + Number(v).toFixed(2); }
-function now() { return new Date().toLocaleString('ru-RU'); }
-
-function addTransaction(user, type, amount, currency, counterparty, note = '') {
-    const tx = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-        type,
-        amount: Number(amount),
-        currency,
-        counterparty: counterparty || '—',
-        date: now(),
-        note: note || ''
-    };
-    user.transactions.push(tx);
-    state.allTransactions.push({
-        from: user.username,
-        to: counterparty || '—',
-        amount: Number(amount),
-        currency,
-        date: now(),
-        note: note || ''
-    });
+function createDefaultUsers() {
+    STATE.users = [
+        { id: 'admin_1', name: 'Admin', email: 'admin@admin.com', password: 'admin123', balances: { BTC: 10, ETH: 50, USDT: 50000, XRP: 1000, SOL: 200 }, isBlocked: false, isAdmin: true, registeredAt: new Date().toISOString() },
+        { id: 'user_1', name: 'Alex', email: 'alex@mail.com', password: '123456', balances: { BTC: 0.05, ETH: 0.5, USDT: 1000, XRP: 0, SOL: 0 }, isBlocked: false, isAdmin: false, registeredAt: new Date().toISOString() },
+        { id: 'user_2', name: 'Maria', email: 'maria@mail.com', password: '123456', balances: { BTC: 0.1, ETH: 1.2, USDT: 500, XRP: 10, SOL: 2 }, isBlocked: false, isAdmin: false, registeredAt: new Date().toISOString() },
+        { id: 'user_3', name: 'John', email: 'john@mail.com', password: '123456', balances: { BTC: 0.02, ETH: 0.3, USDT: 200, XRP: 5, SOL: 0.5 }, isBlocked: false, isAdmin: false, registeredAt: new Date().toISOString() },
+    ];
     saveData();
 }
 
-// ===== ОТРИСОВКА =====
-function render() {
-    const loggedIn = state.currentUser !== null;
+function createDefaultTransactions() {
+    const now = new Date();
+    const txs = [];
+    const users = STATE.users;
+    for (let i = 0; i < 30; i++) {
+        const user = users[Math.floor(Math.random() * users.length)];
+        const types = ['Пополнение', 'Обмен', 'Вывод', 'Списание'];
+        const type = types[Math.floor(Math.random() * types.length)];
+        const currencies = ['BTC', 'ETH', 'USDT', 'XRP', 'SOL'];
+        const currency = currencies[Math.floor(Math.random() * currencies.length)];
+        const amount = (Math.random() * 1000 + 1).toFixed(2);
+        const statuses = ['Успешно', 'В обработке', 'Успешно'];
+        const status = statuses[Math.floor(Math.random() * statuses.length)];
+        const d = new Date(now);
+        d.setHours(d.getHours() - Math.floor(Math.random() * 72));
+        txs.push({
+            id: 'tx_' + Date.now() + '_' + i,
+            userId: user.id,
+            type: type,
+            amount: parseFloat(amount),
+            currency: currency,
+            to: type === 'Вывод' ? '0x' + Math.random().toString(36).slice(2, 20) : (type === 'Пополнение' ? 'Пополнение' : user.name),
+            status: status,
+            timestamp: d.toISOString(),
+        });
+    }
+    STATE.transactions = txs;
+    saveData();
+}
 
-    document.getElementById('loginPage').classList.toggle('hidden', loggedIn);
-    document.getElementById('registerPage').classList.add('hidden');
-    document.getElementById('mainPage').classList.toggle('hidden', !loggedIn);
-    document.getElementById('logoutBtn').style.display = loggedIn ? 'inline-block' : 'none';
-
-    if (!loggedIn) return;
-
-    const u = state.currentUser;
-    document.getElementById('usernameDisplay').textContent = u.username;
-    document.getElementById('balanceDisplay').textContent = formatBtc(u.btc);
-    document.getElementById('fiatDisplay').textContent = formatUsd(u.usd);
-    document.getElementById('mainBtc').textContent = formatBtc(u.btc);
-    document.getElementById('mainUsd').textContent = formatUsd(u.usd);
-
-    if (u.isAdmin) {
-        document.getElementById('adminToggle').style.display = 'inline-block';
+// ===== АВТОРИЗАЦИЯ =====
+function renderAuth() {
+    if (STATE.currentUser) {
+        document.getElementById('authPage').classList.add('hidden');
+        document.getElementById('mainPage').classList.remove('hidden');
+        renderMain();
     } else {
-        document.getElementById('adminToggle').style.display = 'none';
-        document.getElementById('adminPanel').classList.add('hidden');
-    }
-
-    renderHistory();
-    if (u.isAdmin) {
-        renderAdminUsers();
-        renderAdminTransactions();
+        document.getElementById('authPage').classList.remove('hidden');
+        document.getElementById('mainPage').classList.add('hidden');
     }
 }
 
-function renderHistory() {
-    const u = state.currentUser;
-    const tbody = document.getElementById('historyBody');
-    if (!u || u.transactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#6a768e;">Нет операций</td></tr>';
-        return;
-    }
-    tbody.innerHTML = u.transactions.slice().reverse().map(tx => {
-        const amountStr = tx.currency === 'btc' ? formatBtc(tx.amount) : formatUsd(tx.amount);
-        const types = { 'exchange': 'Обмен', 'send': 'Отправка', 'receive': 'Получение', 'admin': 'Админ' };
-        return `<tr>
-            <td>${types[tx.type] || tx.type}</td>
-            <td class="tx-amount">${amountStr}</td>
-            <td>${tx.counterparty}</td>
-            <td style="font-size:12px;color:#6a768e;">${tx.date}</td>
-        </tr>`;
-    }).join('');
+function bindAuthEvents() {
+    document.getElementById('loginBtn').addEventListener('click', doLogin);
+    document.getElementById('registerBtn').addEventListener('click', doRegister);
+    document.getElementById('resetBtn').addEventListener('click', doReset);
+    document.getElementById('showRegister').addEventListener('click', e => { e.preventDefault(); showAuthForm('register'); });
+    document.getElementById('showLogin').addEventListener('click', e => { e.preventDefault(); showAuthForm('login'); });
+    document.getElementById('showReset').addEventListener('click', e => { e.preventDefault(); showAuthForm('reset'); });
+    document.getElementById('showLoginFromReset').addEventListener('click', e => { e.preventDefault(); showAuthForm('login'); });
+    ['loginEmail','loginPassword'].forEach(id => {
+        document.getElementById(id).addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
+    });
+    ['regName','regEmail','regPassword','regPasswordConfirm'].forEach(id => {
+        document.getElementById(id).addEventListener('keyup', e => { if (e.key === 'Enter') doRegister(); });
+    });
 }
 
-function renderAdminUsers() {
-    const tbody = document.getElementById('adminUsersBody');
-    tbody.innerHTML = state.users.map(u => `
-        <tr>
-            <td><strong>${u.username}</strong> ${u.isAdmin ? '👑' : ''}</td>
-            <td>${formatBtc(u.btc)}</td>
-            <td>${formatUsd(u.usd)}</td>
-            <td>
-                <button class="btn btn-secondary btn-sm" onclick="adminEdit('${u.username}', 'btc', 0.1)">+0.1 BTC</button>
-                <button class="btn btn-secondary btn-sm" onclick="adminEdit('${u.username}', 'usd', 10)">+10 USD</button>
-                ${!u.isAdmin ? `<button class="btn btn-danger btn-sm" onclick="adminDelete('${u.username}')">Удалить</button>` : ''}
-            </td>
-        </tr>
-    `).join('');
+function showAuthForm(form) {
+    document.getElementById('loginForm').classList.toggle('hidden', form !== 'login');
+    document.getElementById('registerForm').classList.toggle('hidden', form !== 'register');
+    document.getElementById('resetForm').classList.toggle('hidden', form !== 'reset');
+    document.getElementById('loginError').classList.add('hidden');
+    document.getElementById('regError').classList.add('hidden');
+    document.getElementById('resetError').classList.add('hidden');
+    document.getElementById('resetSuccess').classList.add('hidden');
 }
 
-function renderAdminTransactions() {
-    const tbody = document.getElementById('adminTxBody');
-    if (state.allTransactions.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#6a768e;">Нет операций</td></tr>';
-        return;
-    }
-    tbody.innerHTML = state.allTransactions.slice().reverse().map(tx => {
-        const amountStr = tx.currency === 'btc' ? formatBtc(tx.amount) : formatUsd(tx.amount);
-        return `<tr>
-            <td class="tx-from">${tx.from}</td>
-            <td class="tx-to">${tx.to}</td>
-            <td class="tx-amount">${amountStr}</td>
-            <td>${tx.currency.toUpperCase()}</td>
-            <td style="font-size:12px;color:#6a768e;">${tx.date}</td>
-        </tr>`;
-    }).join('');
-}
-
-// ===== АДМИН ДЕЙСТВИЯ =====
-window.adminEdit = function(username, currency, amount) {
-    const u = getUser(username);
-    if (!u) return;
-    if (currency === 'btc') u.btc += amount;
-    else u.usd += amount;
-    addTransaction(u, 'admin', amount, currency, 'admin', 'Пополнение от администратора');
-    saveData();
-    render();
-    if (state.currentUser && state.currentUser.isAdmin) {
-        renderAdminUsers();
-        renderAdminTransactions();
-    }
-};
-
-window.adminDelete = function(username) {
-    if (username === 'admin') { alert('Нельзя удалить администратора'); return; }
-    if (!confirm(`Удалить пользователя ${username}?`)) return;
-    state.users = state.users.filter(u => u.username !== username);
-    if (state.currentUser && state.currentUser.username === username) state.currentUser = null;
-    saveData();
-    render();
-    if (state.currentUser && state.currentUser.isAdmin) renderAdminUsers();
-};
-
-// ===== ВХОД =====
 function doLogin() {
-    const username = document.getElementById('loginUsername').value.trim();
+    const email = document.getElementById('loginEmail').value.trim();
     const password = document.getElementById('loginPassword').value.trim();
     const errorEl = document.getElementById('loginError');
-
-    const user = getUser(username);
-    if (!user || user.password !== password) {
-        errorEl.textContent = 'Неверный логин или пароль';
+    const user = STATE.users.find(u => u.email === email && u.password === password);
+    if (!user) {
+        errorEl.textContent = 'Неверный email или пароль';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    if (user.isBlocked) {
+        errorEl.textContent = 'Ваш аккаунт заблокирован';
         errorEl.classList.remove('hidden');
         return;
     }
     errorEl.classList.add('hidden');
-    state.currentUser = user;
+    STATE.currentUser = user;
     saveData();
-    render();
+    renderAuth();
 }
 
-// ===== РЕГИСТРАЦИЯ =====
 function doRegister() {
-    const username = document.getElementById('regUsername').value.trim();
-    const password = document.getElementById('regPassword').value.trim();
+    const name = document.getElementById('regName').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
+    const password = document.getElementById('regPassword').value;
+    const confirm = document.getElementById('regPasswordConfirm').value;
     const errorEl = document.getElementById('regError');
-
-    if (!username || !password) {
+    if (!name || !email || !password || !confirm) {
         errorEl.textContent = 'Заполните все поля';
         errorEl.classList.remove('hidden');
         return;
     }
-    if (getUser(username)) {
-        errorEl.textContent = 'Пользователь уже существует';
+    if (password.length < 6) {
+        errorEl.textContent = 'Пароль должен быть не менее 6 символов';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    if (password !== confirm) {
+        errorEl.textContent = 'Пароли не совпадают';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    if (STATE.users.find(u => u.email === email)) {
+        errorEl.textContent = 'Пользователь с таким email уже существует';
         errorEl.classList.remove('hidden');
         return;
     }
     errorEl.classList.add('hidden');
-
     const newUser = {
-        username: username,
+        id: 'user_' + Date.now(),
+        name: name,
+        email: email,
         password: password,
-        btc: 0,
-        usd: 0,
+        balances: { BTC: 0, ETH: 0, USDT: 0, XRP: 0, SOL: 0 },
+        isBlocked: false,
         isAdmin: false,
-        transactions: []
+        registeredAt: new Date().toISOString(),
     };
-    state.users.push(newUser);
+    STATE.users.push(newUser);
     saveData();
     alert('Аккаунт создан! Теперь войдите.');
-    document.getElementById('loginUsername').value = username;
+    showAuthForm('login');
+    document.getElementById('loginEmail').value = email;
     document.getElementById('loginPassword').value = '';
-    document.getElementById('loginPage').classList.remove('hidden');
-    document.getElementById('registerPage').classList.add('hidden');
-    document.getElementById('mainPage').classList.add('hidden');
 }
 
-// ===== ВЫХОД =====
-function doLogout() {
-    state.currentUser = null;
-    saveData();
-    render();
-}
-
-// ===== ПОКАЗ СТРАНИЦ =====
-function showPage(page) {
-    document.getElementById('loginPage').classList.toggle('hidden', page !== 'login');
-    document.getElementById('registerPage').classList.toggle('hidden', page !== 'register');
-    document.getElementById('mainPage').classList.add('hidden');
-    document.getElementById('loginError').classList.add('hidden');
-    document.getElementById('regError').classList.add('hidden');
-}
-
-// ===== ТОГГЛ АДМИНКИ =====
-function toggleAdmin() {
-    const panel = document.getElementById('adminPanel');
-    panel.classList.toggle('hidden');
-    if (!panel.classList.contains('hidden') && state.currentUser && state.currentUser.isAdmin) {
-        renderAdminUsers();
-        renderAdminTransactions();
-    }
-}
-
-// ===== ОБМЕН =====
-function doExchange() {
-    const direction = document.getElementById('exchangeDirection').value;
-    const amount = parseFloat(document.getElementById('exchangeAmount').value);
-    const errorEl = document.getElementById('exchangeError');
-    const successEl = document.getElementById('exchangeSuccess');
-    errorEl.classList.add('hidden');
-    successEl.classList.add('hidden');
-
-    if (!amount || amount <= 0) {
-        errorEl.textContent = 'Введите положительную сумму';
+function doReset() {
+    const email = document.getElementById('resetEmail').value.trim();
+    const errorEl = document.getElementById('resetError');
+    const successEl = document.getElementById('resetSuccess');
+    if (!email) {
+        errorEl.textContent = 'Введите email';
         errorEl.classList.remove('hidden');
         return;
     }
-
-    const u = state.currentUser;
-    const rate = 45000;
-
-    if (direction === 'btc_to_usd') {
-        if (u.btc < amount) {
-            errorEl.textContent = 'Недостаточно BTC';
-            errorEl.classList.remove('hidden');
-            return;
-        }
-        const usdAmount = amount * rate;
-        u.btc -= amount;
-        u.usd += usdAmount;
-        addTransaction(u, 'exchange', amount, 'btc', '→ USD', `Курс ${rate}`);
-        successEl.textContent = `Обменяно ${formatBtc(amount)} → ${formatUsd(usdAmount)}`;
-        successEl.classList.remove('hidden');
-    } else {
-        if (u.usd < amount) {
-            errorEl.textContent = 'Недостаточно USD';
-            errorEl.classList.remove('hidden');
-            return;
-        }
-        const btcAmount = amount / rate;
-        u.usd -= amount;
-        u.btc += btcAmount;
-        addTransaction(u, 'exchange', amount, 'usd', '→ BTC', `Курс ${rate}`);
-        successEl.textContent = `Обменяно ${formatUsd(amount)} → ${formatBtc(btcAmount)}`;
-        successEl.classList.remove('hidden');
+    const user = STATE.users.find(u => u.email === email);
+    if (!user) {
+        errorEl.textContent = 'Пользователь не найден';
+        errorEl.classList.remove('hidden');
+        return;
     }
-    saveData();
-    render();
-    document.getElementById('exchangeAmount').value = '';
-}
-
-// ===== ОТПРАВКА =====
-function doSend() {
-    const to = document.getElementById('sendTo').value.trim();
-    const currency = document.getElementById('sendCurrency').value;
-    const amount = parseFloat(document.getElementById('sendAmount').value);
-    const errorEl = document.getElementById('sendError');
-    const successEl = document.getElementById('sendSuccess');
     errorEl.classList.add('hidden');
-    successEl.classList.add('hidden');
-
-    if (!to) { errorEl.textContent = 'Укажите получателя'; errorEl.classList.remove('hidden'); return; }
-    if (!amount || amount <= 0) { errorEl.textContent = 'Введите положительную сумму'; errorEl.classList.remove('hidden'); return; }
-
-    const sender = state.currentUser;
-    const receiver = getUser(to);
-    if (!receiver) { errorEl.textContent = 'Получатель не найден'; errorEl.classList.remove('hidden'); return; }
-    if (sender.username === receiver.username) { errorEl.textContent = 'Нельзя отправить самому себе'; errorEl.classList.remove('hidden'); return; }
-
-    if (currency === 'btc') {
-        if (sender.btc < amount) { errorEl.textContent = 'Недостаточно BTC'; errorEl.classList.remove('hidden'); return; }
-        sender.btc -= amount;
-        receiver.btc += amount;
-        addTransaction(sender, 'send', amount, 'btc', receiver.username);
-        addTransaction(receiver, 'receive', amount, 'btc', sender.username);
-    } else {
-        if (sender.usd < amount) { errorEl.textContent = 'Недостаточно USD'; errorEl.classList.remove('hidden'); return; }
-        sender.usd -= amount;
-        receiver.usd += amount;
-        addTransaction(sender, 'send', amount, 'usd', receiver.username);
-        addTransaction(receiver, 'receive', amount, 'usd', sender.username);
-    }
-    saveData();
-    render();
-    successEl.textContent = `Отправлено ${currency.toUpperCase()} ${amount} → ${to}`;
+    successEl.textContent = 'Инструкция по восстановлению отправлена на ' + email;
     successEl.classList.remove('hidden');
-    document.getElementById('sendAmount').value = '';
-    document.getElementById('sendTo').value = '';
+    console.log('[RESET] Инструкция для:', email);
 }
 
-// ===== АДМИН ОТПРАВКА =====
-function doAdminSend() {
-    const from = document.getElementById('adminSendFrom').value.trim();
-    const to = document.getElementById('adminSendTo').value.trim();
-    const currency = document.getElementById('adminSendCurrency').value;
-    const amount = parseFloat(document.getElementById('adminSendAmount').value);
-    const errorEl = document.getElementById('adminSendError');
-    const successEl = document.getElementById('adminSendSuccess');
-    errorEl.classList.add('hidden');
-    successEl.classList.add('hidden');
+function doLogout() {
+    STATE.currentUser = null;
+    saveData();
+    renderAuth();
+    clearIntervals();
+}
 
-    if (!from || !to) { errorEl.textContent = 'Укажите отправителя и получателя'; errorEl.classList.remove('hidden'); return; }
-    if (!amount || amount <= 0) { errorEl.textContent = 'Введите положительную сумму'; errorEl.classList.remove('hidden'); return; }
+// ===== ОСНОВНОЙ ИНТЕРФЕЙС =====
+function renderMain() {
+    const user = STATE.currentUser;
+    if (!user) return;
+    document.getElementById('userNameDisplay').textContent = user.name;
+    document.getElementById('userAvatar').textContent = user.name.charAt(0).toUpperCase();
+    document.getElementById('welcomeMessage').textContent = 'Добро пожаловать, ' + user.name + '!';
+    updateBalances();
+    renderDashboard();
+    renderWallet();
+    renderHistory();
+    renderAdmin();
+    updateNav();
+}
 
-    const sender = getUser(from);
-    const receiver = getUser(to);
-    if (!sender) { errorEl.textContent = 'Отправитель не найден'; errorEl.classList.remove('hidden'); return; }
-    if (!receiver) { errorEl.textContent = 'Получатель не найден'; errorEl.classList.remove('hidden'); return; }
-    if (sender.username === receiver.username) { errorEl.textContent = 'Нельзя отправить самому себе'; errorEl.classList.remove('hidden'); return; }
+function updateBalances() {
+    const user = STATE.currentUser;
+    if (!user) return;
+    const total = Object.keys(user.balances).reduce((sum, key) => {
+        return sum + (user.balances[key] || 0) * (STATE.prices[key] || 0);
+    }, 0);
+    document.getElementById('totalBalance').textContent = '$' + total.toFixed(2);
+    document.getElementById('headerBalance').textContent = '$' + total.toFixed(2);
+}
 
-    if (currency === 'btc') {
-        if (sender.btc < amount) { errorEl.textContent = `Недостаточно BTC у ${sender.username}`; errorEl.classList.remove('hidden'); return; }
-        sender.btc -= amount;
-        receiver.btc += amount;
+function renderDashboard() {
+    const user = STATE.currentUser;
+    if (!user) return;
+    // Баланс
+    const list = document.getElementById('balanceList');
+    list.innerHTML = Object.keys(user.balances).map(key => `
+        <div class="balance-row">
+            <span>${key}</span>
+            <span>${user.balances[key].toFixed(4)} ≈ $${(user.balances[key] * STATE.prices[key]).toFixed(2)}</span>
+        </div>
+    `).join('');
+
+    // Последние 5 транзакций
+    const txs = getTransactionsForUser(user.id).slice(0, 5);
+    const tbody = document.getElementById('recentTransactions');
+    if (txs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#8895aa;">Нет транзакций</td></tr>';
     } else {
-        if (sender.usd < amount) { errorEl.textContent = `Недостаточно USD у ${sender.username}`; errorEl.classList.remove('hidden'); return; }
-        sender.usd -= amount;
-        receiver.usd += amount;
-    }
-    addTransaction(sender, 'admin', amount, currency, receiver.username, 'Административный перевод');
-    addTransaction(receiver, 'admin', amount, currency, sender.username, 'Административное поступление');
-    saveData();
-    render();
-    successEl.textContent = `Переведено ${currency.toUpperCase()} ${amount} от ${from} → ${to}`;
-    successEl.classList.remove('hidden');
-    document.getElementById('adminSendAmount').value = '';
-    if (state.currentUser && state.currentUser.isAdmin) { renderAdminUsers(); renderAdminTransactions(); }
-}
-
-// ===== АДМИН СОЗДАНИЕ ПОЛЬЗОВАТЕЛЯ =====
-function adminCreateUser() {
-    const username = document.getElementById('adminNewUser').value.trim();
-    const password = document.getElementById('adminNewPass').value.trim();
-    if (!username || !password) { alert('Заполните логин и пароль'); return; }
-    if (getUser(username)) { alert('Пользователь уже существует'); return; }
-    state.users.push({
-        username: username,
-        password: password,
-        btc: 0,
-        usd: 0,
-        isAdmin: false,
-        transactions: []
-    });
-    saveData();
-    alert('Пользователь создан');
-    document.getElementById('adminNewUser').value = '';
-    document.getElementById('adminNewPass').value = '';
-    if (state.currentUser && state.currentUser.isAdmin) renderAdminUsers();
-}
-
-// ===== ПОДКЛЮЧЕНИЕ СОБЫТИЙ =====
-function bindEvents() {
-    document.getElementById('loginBtn').addEventListener('click', doLogin);
-    document.getElementById('registerBtn').addEventListener('click', doRegister);
-    document.getElementById('showRegister').addEventListener('click', e => { e.preventDefault(); showPage('register'); });
-    document.getElementById('showLogin').addEventListener('click', e => { e.preventDefault(); showPage('login'); });
-    document.getElementById('logoutBtn').addEventListener('click', doLogout);
-    document.getElementById('adminToggle').addEventListener('click', toggleAdmin);
-    document.getElementById('exchangeBtn').addEventListener('click', doExchange);
-    document.getElementById('sendBtn').addEventListener('click', doSend);
-    document.getElementById('adminSendBtn').addEventListener('click', doAdminSend);
-    document.getElementById('adminCreateUserBtn').addEventListener('click', adminCreateUser);
-
-    document.querySelectorAll('.tabs button').forEach(btn => {
-        btn.addEventListener('click', function() {
-            document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
-            const target = document.getElementById(this.dataset.tab);
-            if (target) target.classList.add('active');
-        });
-    });
-
-    document.getElementById('loginUsername').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
-    document.getElementById('loginPassword').addEventListener('keyup', e => { if (e.key === 'Enter') doLogin(); });
-}
-
-// ===== ЗАПУСК =====
-document.addEventListener('DOMContentLoaded', function() {
-    loadData();
-    render();
-    bindEvents();
-});
+        tbody.innerHTML = txs.map(tx => `
+            <tr>
+                <td>${tx.type}</td>
+                <td>${tx.amount}</td>
+                <td>${tx.currency}</td>
+                <td class="status
