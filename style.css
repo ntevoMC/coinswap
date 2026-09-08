@@ -11,7 +11,6 @@ body {
 }
 .hidden { display: none !important; }
 
-/* ===== AUTH ===== */
 .auth-container {
     display: flex;
     justify-content: center;
@@ -53,7 +52,6 @@ body {
 }
 .auth-links a:hover { text-decoration: underline; }
 
-/* ===== HEADER ===== */
 .header {
     display: flex;
     justify-content: space-between;
@@ -113,12 +111,10 @@ body {
 }
 .logout-btn:hover { color: #f0b90b; }
 
-/* ===== CONTENT ===== */
 .content { padding: 24px; max-width: 1200px; margin: 0 auto; }
 .page { display: none; }
 .page.active { display: block; }
 
-/* ===== CARDS ===== */
 .card {
     background: #151e26;
     border-radius: 12px;
@@ -142,7 +138,6 @@ body {
     .user-menu { justify-content: center; }
 }
 
-/* ===== FORMS ===== */
 .form-group {
     margin-bottom: 14px;
 }
@@ -192,7 +187,6 @@ body {
 .btn-sm { padding: 4px 10px; font-size: 12px; }
 .btn-block { width: 100%; }
 
-/* ===== TABLES ===== */
 .table-wrap { overflow-x: auto; }
 table {
     width: 100%;
@@ -213,7 +207,6 @@ table td {
 .status-pending { color: #f0b90b; }
 .status-error { color: #ef7a8a; }
 
-/* ===== ALERTS ===== */
 .alert {
     padding: 10px 14px;
     border-radius: 8px;
@@ -222,7 +215,6 @@ table td {
 .alert-success { background: #1a3a2a; color: #6fcf97; border: 1px solid #2a5a3a; }
 .alert-error { background: #3a1a1a; color: #ef7a8a; border: 1px solid #5a2a2a; }
 
-/* ===== EXCHANGE ===== */
 .exchange-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -238,7 +230,6 @@ table td {
 }
 .exchange-rate span { color: #f0b90b; font-weight: 600; }
 
-/* ===== ADMIN ===== */
 .admin-stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -252,7 +243,6 @@ table td {
 }
 .stat-item span { color: #f0b90b; font-weight: 600; }
 
-/* ===== MODAL ===== */
 .modal {
     position: fixed;
     top: 0; left: 0;
@@ -301,3 +291,15 @@ table td {
     justify-content: center;
     margin: 12px 0;
 }
+.balance-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #1a212b;
+}
+.welcome {
+    margin-bottom: 20px;
+}
+.welcome h1 { color: #e8edf5; }
+.welcome p { color: #8895aa; }
+.welcome strong { color: #f0b90b; }
