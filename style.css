@@ -19,7 +19,6 @@ body {
     width: 100%;
 }
 
-/* ===== HEADER ===== */
 .header {
     display: flex;
     justify-content: space-between;
@@ -37,7 +36,6 @@ body {
     font-weight: 700;
     font-size: 24px;
     color: #f7931a;
-    letter-spacing: -0.5px;
 }
 .logo span {
     color: #e8edf5;
@@ -75,7 +73,6 @@ body {
     color: #f7931a;
 }
 
-/* ===== CARDS ===== */
 .card {
     background: #161e28;
     border-radius: 14px;
@@ -88,7 +85,6 @@ body {
     font-size: 18px;
     margin-bottom: 18px;
     color: #c8d0dc;
-    font-weight: 600;
 }
 
 .login-card {
@@ -111,7 +107,6 @@ body {
     text-decoration: underline;
 }
 
-/* ===== BALANCE ROW ===== */
 .balance-row {
     display: flex;
     justify-content: space-between;
@@ -135,7 +130,6 @@ body {
     color: #6fcf97;
 }
 
-/* ===== FORMS ===== */
 .form-group {
     margin-bottom: 16px;
 }
@@ -162,9 +156,6 @@ body {
 .form-group select:focus {
     border-color: #f7931a;
 }
-.form-group input::placeholder {
-    color: #55637a;
-}
 
 .form-row {
     display: flex;
@@ -176,7 +167,6 @@ body {
     min-width: 120px;
 }
 
-/* ===== BUTTONS ===== */
 .btn {
     padding: 11px 24px;
     border: none;
@@ -215,7 +205,6 @@ body {
     font-size: 12px;
 }
 
-/* ===== TABLES ===== */
 .table-wrap {
     overflow-x: auto;
 }
@@ -229,7 +218,6 @@ table th {
     padding: 10px 8px;
     color: #8895aa;
     border-bottom: 1px solid #26303e;
-    font-weight: 600;
 }
 table td {
     padding: 10px 8px;
@@ -245,7 +233,6 @@ table td {
     font-weight: 600;
 }
 
-/* ===== ALERTS ===== */
 .alert {
     padding: 12px 16px;
     border-radius: 10px;
@@ -266,7 +253,6 @@ table td {
     display: none !important;
 }
 
-/* ===== TABS ===== */
 .tabs {
     display: flex;
     gap: 4px;
@@ -305,7 +291,6 @@ table td {
     display: block;
 }
 
-/* ===== RESPONSIVE ===== */
 @media (max-width: 640px) {
     .header {
         flex-direction: column;
